@@ -1,0 +1,63 @@
+/*********************************************
+ * OPL 22.1.1.0 Model
+ * Author: fspinto
+ * Creation Date: Jan 2, 2025 at 12:13:53 PM
+ *********************************************/
+// Capacitated Warehouse Location Problem
+// this model is ok and is providing the correct solution
+
+// Parameters
+int nWarehouses = ...;       // Number of warehouses
+int nCustomers = ...;        // Number of customers
+
+range Warehouses = 1..nWarehouses;
+range Customers = 1..nCustomers;
+
+float fixedCost[Warehouses] = ...; // Fixed cost of opening each warehouse
+float capacity[Warehouses] = ...;  // Capacity of each warehouse
+float demand[Customers] = ...;     // Demand of each customer
+float transportCost[Warehouses][Customers] = ...; // Transport cost from warehouse i to customer j
+
+// Decision Variables
+dvar boolean open[Warehouses];          // 1 if warehouse i is open, 0 otherwise
+dvar float+ supply[Warehouses][Customers]; // Amount supplied from warehouse i to customer j
+
+// Objective: Minimize total cost
+minimize
+  sum(i in Warehouses) (fixedCost[i] * open[i]) +
+  sum(i in Warehouses, j in Customers) (transportCost[i][j] * supply[i][j]);
+
+// Constraints
+subject to {
+  // Demand satisfaction for each customer
+  forall(j in Customers)
+    sum(i in Warehouses) supply[i][j] == demand[j];
+
+  // Capacity constraints for each warehouse
+  forall(i in Warehouses)
+    sum(j in Customers) supply[i][j] <= capacity[i] * open[i];
+
+  // Linking supply and open decision variables
+  forall(i in Warehouses, j in Customers)
+    supply[i][j] <= demand[j] * open[i];
+}
+
+// Data
+execute {
+  writeln("Optimal Total Cost: ", cplex.getObjValue());
+  writeln("Warehouses to Open:");
+  for (var i in Warehouses) {
+    if (open[i] == 1)
+      writeln("  Warehouse ", i, " is open.");
+  }
+  for (var j in Customers) {
+    writeln("Customer ", j, " is supplied by:");
+    for (i in Warehouses) {
+      if (supply[i][j] > 0) {
+        writeln("  Warehouse ", i, " with supply: ", supply[i][j]);
+      }
+    }
+  }
+}
+
+ 

@@ -1,0 +1,65 @@
+/*********************************************
+ * OPL 22.1.1.0 Model
+ * Author: fspinto
+ * Creation Date: Jan 2, 2025 at 4:21:15 PM
+ *********************************************/
+using CP;
+
+// Parameters
+int nWarehouses = ...;       // Number of warehouses
+int nCustomers = ...;        // Number of customers
+
+float fixedCost[1..nWarehouses] = ...; // Fixed cost of opening each warehouse
+float capacity[1..nWarehouses] = ...;  // Capacity of each warehouse
+float demand[1..nCustomers] = ...;     // Demand of each customer
+float transportCost[1..nWarehouses][1..nCustomers] = ...; // Transport cost from warehouse i to customer j
+
+// Decision variables
+dvar boolean x[1..nWarehouses];      // Warehouse open decision (binary)
+dvar boolean y[1..nWarehouses][1..nCustomers];  // Assignment of customers to warehouses (binary)
+dvar int amountServed[1..nWarehouses][1..nCustomers] in 0..5000;  // Amount of goods supplied to customer j by warehouse i (integer)
+
+// Objective: Minimize fixed costs + transport costs
+minimize
+  sum(i in 1..nWarehouses) fixedCost[i] * x[i] +
+  sum(i in 1..nWarehouses, j in 1..nCustomers) transportCost[i][j] * amountServed[i][j];
+
+// Constraints
+subject to {
+  // Each customer must be assigned to at least one warehouse
+  forall(j in 1..nCustomers)
+    sum(i in 1..nWarehouses) y[i][j] >= 1;
+
+  // The total amount served to each customer must equal their demand
+  forall(j in 1..nCustomers)
+    sum(i in 1..nWarehouses) amountServed[i][j] == demand[j];
+
+  // Total amount served by warehouse i should not exceed its capacity
+  forall(i in 1..nWarehouses)
+    sum(j in 1..nCustomers) amountServed[i][j] <= capacity[i] * x[i];
+
+  // A warehouse can only serve customers if it is open and the customer is assigned to it
+  forall(i in 1..nWarehouses, j in 1..nCustomers)
+    amountServed[i][j] <= demand[j] * y[i][j];
+
+  // A warehouse can only serve customers if it is open
+  forall(i in 1..nWarehouses, j in 1..nCustomers)
+    y[i][j] <= x[i];
+}
+
+// Output
+execute {
+  for(var i in 1..nWarehouses) {
+    if(x[i] == 1) {
+      // Print the warehouses that are open
+      writeln("Warehouse ", i, " is open.");
+      for(var j in 1..nCustomers) {
+        if(amountServed[i][j] > 0) {
+          // Print how much each customer gets from the warehouse
+          writeln("  Customer ", j, " is served ", amountServed[i][j], " units by warehouse ", i);
+        }
+      }
+    }
+  }
+}
+ 
