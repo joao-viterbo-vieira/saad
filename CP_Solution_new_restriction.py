@@ -1,3 +1,7 @@
+# modelo de constraint programming para problema de alocação de armazéns a clientes
+# versão com novas restrições
+# forçar a um uso mínimo de capacidade se o armazém for aberto
+
 import re
 import ast
 from ortools.sat.python import cp_model
@@ -55,7 +59,23 @@ def read_data_file(filename):
     transportCost_str = transportCost_str.replace(";", "")
     transportCost = ast.literal_eval(transportCost_str)
 
-    return nWarehouses, nCustomers, fixedCost, capacity, demand, transportCost
+    # Adjust indices to zero-based
+    prohibited_pairs = [(i - 1, i) for i in range(2, 51, 2)]  # Sequential pairs
+    prohibited_pairs += [
+        (i, j)
+        for i in range(5, 50, 5)
+        for j in range(5, 50, 5)
+        if i < j
+    ]  # Multiples of 5
+
+    # conceito adicionado - clientes que não podem seer servidos pelo mesmo armazém
+    # Clientes com números sequenciais não podem compartilhar o mesmo armazém
+    #prohibited_pairs = [(i, i + 1) for i in range(1, 50, 2)]
+
+    # Clientes divisíveis por 5 não podem compartilhar o mesmo armazém
+    #prohibited_pairs += [(i, j) for i in range(5, 51, 5) for j in range(5, 51, 5) if i < j]
+
+    return nWarehouses, nCustomers, fixedCost, capacity, demand, transportCost, prohibited_pairs
 
 
 def solve_capacitated_warehouse_location(
@@ -65,6 +85,7 @@ def solve_capacitated_warehouse_location(
     capacity,
     demand,
     transportCost,
+    prohibited_pairs,
     time_limit_seconds=300,
 ):
     """
@@ -136,6 +157,25 @@ def solve_capacitated_warehouse_location(
             sum(amountServed[i][j] for j in range(nCustomers)) >= int(0.8 * capacity[i]) * x[i]
         )
 
+    # 7. Adicionar restrições para cada par de clientes
+    #for j1-1, j2-1 in prohibited_pairs:
+    #    for i in range(nWarehouses):
+    #        model.Add(y[i][j1] + y[i][j2] <= 1)
+
+    # 7. Adicionar restrições para cada par de clientes
+    for j1, j2 in prohibited_pairs:
+        # Ajuste dos índices de j1 e j2 para índice baseado em 0
+        j1 -= 1
+        j2 -= 1
+
+        # Verificar se os índices estão dentro do intervalo válido
+        if j1 >= 0 and j1 < nCustomers and j2 >= 0 and j2 < nCustomers:
+            for i in range(nWarehouses):
+                model.Add(y[i][j1] + y[i][j2] <= 1)
+        else:
+            print(f"Índices proibidos inválidos: j1={j1 + 1}, j2={j2 + 1}")
+
+
     # Definir o solucionador com limite de tempo
     solver = cp_model.CpSolver()
     solver.parameters.max_time_in_seconds = time_limit_seconds
@@ -153,6 +193,11 @@ def solve_capacitated_warehouse_location(
             if solver.Value(x[i]) == 1:
                 total_served = sum(solver.Value(amountServed[i][j]) for j in range(nCustomers))
                 print(f"  - Armazém {i + 1} está aberto. Total fornecido: {total_served} unidades")
+
+        print("\nArmazéns Fechados:")
+        for i in range(nWarehouses):
+            if solver.Value(x[i]) == 0:
+                print(f"  - Armazém {i + 1} está fechado.")
 
         print("\nFornecimento aos Clientes:")
         for j in range(nCustomers):
@@ -175,7 +220,7 @@ if __name__ == "__main__":
 
     try:
         # 1) Ler dados do ficheiro
-        nWarehouses, nCustomers, fixedCost, capacity, demand, transportCost = (
+        nWarehouses, nCustomers, fixedCost, capacity, demand, transportCost, prohibited_pairs = (
             read_data_file(data_file)
         )
 
@@ -190,6 +235,7 @@ if __name__ == "__main__":
             capacity,
             demand,
             transportCost,
+            prohibited_pairs,
             time_limit_seconds=time_limit_seconds,
         )
     except Exception as e:

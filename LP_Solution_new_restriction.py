@@ -83,7 +83,23 @@ def read_data_file(filename):
                 f"O número de colunas na linha {idx+1} de transportCost não corresponde a nCustomers."
             )
 
-    return nWarehouses, nCustomers, fixedCost, capacity, demand, transportCost
+    # Adjust indices to zero-based
+    prohibited_pairs = [(i - 1, i) for i in range(2, 51, 2)]  # Sequential pairs
+    prohibited_pairs += [
+        (i, j)
+        for i in range(5, 50, 5)
+        for j in range(5, 50, 5)
+        if i < j
+    ]  # Multiples of 5
+
+    # conceito adicionado - clientes que não podem seer servidos pelo mesmo armazém
+    # Clientes com números sequenciais não podem compartilhar o mesmo armazém
+    #prohibited_pairs = [(i, i + 1) for i in range(1, 50, 2)]
+
+    # Clientes divisíveis por 5 não podem compartilhar o mesmo armazém
+    #prohibited_pairs += [(i, j) for i in range(5, 51, 5) for j in range(5, 51, 5) if i < j]
+
+    return nWarehouses, nCustomers, fixedCost, capacity, demand, transportCost, prohibited_pairs
 
 
 def solve_capacitated_warehouse_location(
@@ -93,6 +109,7 @@ def solve_capacitated_warehouse_location(
     capacity,
     demand,
     transportCost,
+    prohibited_pairs,
     time_limit=180000,
 ):
     """
@@ -165,6 +182,11 @@ def solve_capacitated_warehouse_location(
             solver.Sum(amountServed[i, j] for j in Customers) >= 0.8 * capacity[i] * x[i]
         )
 
+    # 7. Certos pares de clientes não podem ser atendidos pelo mesmo armazém
+    for (c1, c2) in prohibited_pairs:
+        for i in Warehouses:
+            solver.Add(y[i, c1 - 1] + y[i, c2 - 1] <= 1)
+
     # Resolver o problema
     status = solver.Solve()
 
@@ -176,6 +198,12 @@ def solve_capacitated_warehouse_location(
             if x[i].solution_value() > 0.5:
                 total_served = sum(amountServed[i, j].solution_value() for j in Customers)
                 print(f"  - Armazém {i + 1} está aberto. Quantidade Total Servida: {total_served:.2f} unidades")
+
+        # Exibir os armazéns que não estão abertos
+        print("\nArmazéns Não Abertos:")
+        for i in Warehouses:
+            if x[i].solution_value() <= 0.5:  # Verifica se o armazém não está aberto
+                print(f"  - Armazém {i + 1} não está aberto.")
 
         print("\nFornecimento aos Clientes:")
         for j in Customers:
@@ -198,7 +226,7 @@ if __name__ == "__main__":
 
     try:
         # 1) Ler dados do ficheiro
-        nWarehouses, nCustomers, fixedCost, capacity, demand, transportCost = (
+        nWarehouses, nCustomers, fixedCost, capacity, demand, transportCost, prohibited_pairs = (
             read_data_file(data_file)
         )
 
@@ -213,6 +241,7 @@ if __name__ == "__main__":
             capacity,
             demand,
             transportCost,
+            prohibited_pairs,
             time_limit=time_limit_ms,
         )
     except Exception as e:
