@@ -52,7 +52,7 @@ def read_data_file(filename):
 
 # 1) Ler dados do ficheiro
 (nWarehouses, nCustomers, fixedCost, capacity, demand, transportCost) = read_data_file(
-    "wh_ficheiro_dados.txt"
+    "facility_location.dat"
 )
 # dar print dos valores
 print("nWarehouses = ", nWarehouses)
