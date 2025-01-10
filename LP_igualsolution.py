@@ -183,7 +183,7 @@ def solve_capacitated_warehouse_location(
 
 if __name__ == "__main__":
     # Caminho para o ficheiro de dados
-    data_file = "facility_location_133.dat"
+    data_file = "wh_ficheiro_dados.txt"
 
     try:
         # 1) Ler dados do ficheiro
