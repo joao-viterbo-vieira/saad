@@ -125,6 +125,19 @@ def solve_capacitated_warehouse_location(
         print("Solver CBC não está disponível.")
         return
 
+    # PARA ASSEGURAR LOGS
+    # Redirect stdout to capture solver logs
+    log_capture = io.StringIO()
+    sys.stdout = log_capture  # Redirect output to the StringIO object
+
+    # Enable solver log
+    solver.EnableOutput()
+
+    # Restore stdout
+    sys.stdout = sys.__stdout__
+
+    ## FIM CODIGO PARA ASSEGURAR LOGS
+    
     # Definir o limite de tempo em milissegundos
     solver.SetTimeLimit(int(time_limit * 1000))  # Convertendo para ms
 
