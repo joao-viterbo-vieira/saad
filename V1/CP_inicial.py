@@ -3,6 +3,9 @@ import ast
 from ortools.sat.python import cp_model
 
 
+# Custo Total Ótimo: 1040444.37
+
+
 def read_data_file(filename):
     """
     Lê o ficheiro de dados do problema (ex.: dados.txt) e devolve

@@ -47,6 +47,8 @@ def read_data_file(filename):
     transportCost_str = transportCost_str.replace(";", "")  # remover ';' se existirem
     transportCost = ast.literal_eval(transportCost_str)
 
+    # Atenção colocar as restrições extras aqui pode ser necessário acrescentar ou retirar.
+
     return nWarehouses, nCustomers, fixedCost, capacity, demand, transportCost
 
 

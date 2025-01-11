@@ -1,6 +1,9 @@
 import re
 import ast
 from ortools.linear_solver import pywraplp
+import math
+
+# Custo Total Ótimo: 1150951.65
 
 
 def read_data_file(filename):
@@ -53,9 +56,7 @@ def read_data_file(filename):
     transportCost_str = transportCost_match.group(1).strip()
 
     # Convertendo para lista de listas
-    # Adiciona colchetes externos para formar uma lista de listas válida
     transportCost_str = "[" + transportCost_str + "]"
-    # Remove possíveis pontos e vírgulas no final das linhas
     transportCost_str = transportCost_str.replace(";", "")
     try:
         transportCost = ast.literal_eval(transportCost_str)
@@ -76,10 +77,30 @@ def read_data_file(filename):
     for idx, row in enumerate(transportCost):
         if len(row) != nCustomers:
             raise ValueError(
-                f"O número de colunas na linha {idx+1} de transportCost não corresponde a nCustomers."
+                f"O número de colunas na linha {idx + 1} de transportCost não corresponde a nCustomers."
             )
 
-    return nWarehouses, nCustomers, fixedCost, capacity, demand, transportCost
+    # Inicializa as variáveis para os pares proibidos
+    prohibited_pairs = [(i - 1, i) for i in range(2, 51, 2)]  # Pares sequenciais
+    prohibited_pairs += [
+        (i, j) for i in range(5, 50, 5) for j in range(5, 50, 5) if i < j
+    ]  # Múltiplos de 5
+
+    # Dependência entre armazéns
+    dependent_warehouses = []
+    for i in range(5):
+        dependent_warehouses.append((i, i + 5))
+
+    return (
+        nWarehouses,
+        nCustomers,
+        fixedCost,
+        capacity,
+        demand,
+        transportCost,
+        prohibited_pairs,
+        dependent_warehouses,
+    )
 
 
 def solve_capacitated_warehouse_location(
@@ -89,11 +110,14 @@ def solve_capacitated_warehouse_location(
     capacity,
     demand,
     transportCost,
-    time_limit=180000,
+    prohibited_pairs,
+    dependent_warehouses,
+    constraints_config,
+    time_limit=300,  # Em segundos
 ):
     """
-    Resolve o problema de Localização de Armazéns Capacitados usando OR-Tools com solver CBC.
-    time_limit: limite de tempo em milissegundos (default = 60000 ms = 1 minuto)
+    Resolve o problema de Localização de Armazéns Capacitados usando OR-Tools com solver CBC (MILP).
+    time_limit: limite de tempo em segundos.
     """
     # Criação do solver
     solver = pywraplp.Solver.CreateSolver("CBC")
@@ -101,22 +125,16 @@ def solve_capacitated_warehouse_location(
         print("Solver CBC não está disponível.")
         return
 
-    # Definir o limite de tempo
-    solver.SetTimeLimit(time_limit)  # Tempo em milissegundos
+    # Definir o limite de tempo em milissegundos
+    solver.SetTimeLimit(int(time_limit * 1000))  # Convertendo para ms
 
     # Índices (0-based em Python)
     Warehouses = range(nWarehouses)
     Customers = range(nCustomers)
 
     # Variáveis de decisão
-    # x[i] = 1 se o armazém i estiver aberto, 0 caso contrário
     x = {i: solver.BoolVar(f"x_{i}") for i in Warehouses}
-
-    # y[i][j] = 1 se o cliente j for atribuído ao armazém i, 0 caso contrário
     y = {(i, j): solver.BoolVar(f"y_{i}_{j}") for i in Warehouses for j in Customers}
-
-    # amountServed[i][j] = quantidade fornecida pelo armazém i para o cliente j
-    # Variável inteira entre 0 e 5000
     amountServed = {
         (i, j): solver.IntVar(0, 5000, f"amountServed_{i}_{j}")
         for i in Warehouses
@@ -132,28 +150,55 @@ def solve_capacitated_warehouse_location(
     # Restrições
 
     # 1. Cada cliente deve ser atribuído a pelo menos um armazém
-    for j in Customers:
-        solver.Add(solver.Sum(y[i, j] for i in Warehouses) >= 1)
+    if constraints_config.get("assign_customer_to_warehouse", False):
+        for j in Customers:
+            solver.Add(solver.Sum(y[i, j] for i in Warehouses) >= 1)
 
     # 2. A quantidade total servida a cada cliente deve ser igual à sua demanda
-    for j in Customers:
-        solver.Add(solver.Sum(amountServed[i, j] for i in Warehouses) == demand[j])
+    if constraints_config.get("serve_exact_demand", False):
+        for j in Customers:
+            solver.Add(solver.Sum(amountServed[i, j] for i in Warehouses) == demand[j])
 
     # 3. A quantidade total servida por cada armazém não deve exceder sua capacidade multiplicada por x[i]
-    for i in Warehouses:
-        solver.Add(
-            solver.Sum(amountServed[i, j] for j in Customers) <= capacity[i] * x[i]
-        )
+    if constraints_config.get("warehouse_capacity", False):
+        for i in Warehouses:
+            solver.Add(
+                solver.Sum(amountServed[i, j] for j in Customers) <= capacity[i] * x[i]
+            )
 
     # 4. amountServed[i][j] <= demanda[j] * y[i][j]
-    for i in Warehouses:
-        for j in Customers:
-            solver.Add(amountServed[i, j] <= demand[j] * y[i, j])
+    if constraints_config.get("serve_demand_with_y", False):
+        for i in Warehouses:
+            for j in Customers:
+                solver.Add(amountServed[i, j] <= demand[j] * y[i, j])
 
     # 5. y[i][j] <= x[i]
-    for i in Warehouses:
-        for j in Customers:
-            solver.Add(y[i, j] <= x[i])
+    if constraints_config.get("assign_to_open_warehouse", False):
+        for i in Warehouses:
+            for j in Customers:
+                solver.Add(y[i, j] <= x[i])
+
+    # 6. Se um armazém estiver aberto, ele deve ser utilizado em pelo menos 80% de sua capacidade
+    if constraints_config.get("minimum_capacity_usage", False):
+        for i in Warehouses:
+            min_80_cap = math.floor(0.8 * capacity[i])  # arredondando para baixo
+            solver.Add(
+                solver.Sum(amountServed[i, j] for j in Customers) >= min_80_cap * x[i]
+            )
+
+    # 7. Certos pares de clientes não podem ser atendidos pelo mesmo armazém
+    if constraints_config.get("prohibited_pairs", False):
+        for c1, c2 in prohibited_pairs:
+            # Ajustar índices se necessário (caso venham 1-based)
+            c1_adj = c1 - 1
+            c2_adj = c2 - 1
+            for i in Warehouses:
+                solver.Add(y[i, c1_adj] + y[i, c2_adj] <= 1)
+
+    # 8. Dependência entre armazéns (x[i] <= x[j])
+    if constraints_config.get("dependent_warehouses", False):
+        for i, j in dependent_warehouses:
+            solver.Add(x[i] <= x[j])
 
     # Resolver o problema
     status = solver.Solve()
@@ -161,10 +206,21 @@ def solve_capacitated_warehouse_location(
     # Processar e exibir os resultados
     if status == pywraplp.Solver.OPTIMAL:
         print(f"\nCusto Total Ótimo: {solver.Objective().Value():.2f}\n")
-        print("Armazéns a Abrir:")
+        print("Armazéns a Abrir e Quantidade Total Servida:")
         for i in Warehouses:
             if x[i].solution_value() > 0.5:
-                print(f"  - Armazém {i + 1} está aberto.")
+                total_served = sum(
+                    amountServed[i, j].solution_value() for j in Customers
+                )
+                print(
+                    f"  - Armazém {i + 1} está aberto. Quantidade Total Servida: {total_served:.2f} unidades"
+                )
+
+        # Exibir os armazéns que não estão abertos
+        print("\nArmazéns Não Abertos:")
+        for i in Warehouses:
+            if x[i].solution_value() <= 0.5:  # Verifica se o armazém não está aberto
+                print(f"  - Armazém {i + 1} não está aberto.")
 
         print("\nFornecimento aos Clientes:")
         for j in Customers:
@@ -185,11 +241,30 @@ if __name__ == "__main__":
     # Caminho para o ficheiro de dados
     data_file = "wh_ficheiro_dados.txt"
 
+    # Configuração de ativação/desativação de restrições
+    constraints_config = {
+        "assign_customer_to_warehouse": True,
+        "serve_exact_demand": True,
+        "warehouse_capacity": True,
+        "serve_demand_with_y": True,
+        "assign_to_open_warehouse": True,
+        "minimum_capacity_usage": True,
+        "prohibited_pairs": True,
+        "dependent_warehouses": True,
+    }
+
     try:
         # 1) Ler dados do ficheiro
-        nWarehouses, nCustomers, fixedCost, capacity, demand, transportCost = (
-            read_data_file(data_file)
-        )
+        (
+            nWarehouses,
+            nCustomers,
+            fixedCost,
+            capacity,
+            demand,
+            transportCost,
+            prohibited_pairs,
+            dependent_warehouses,
+        ) = read_data_file(data_file)
 
         # 2) Resolver o problema
         # Define o limite de tempo (exemplo: 5 minutos = 300000 milissegundos)
@@ -202,7 +277,11 @@ if __name__ == "__main__":
             capacity,
             demand,
             transportCost,
+            prohibited_pairs,
+            dependent_warehouses,
+            constraints_config,
             time_limit=time_limit_ms,
         )
+
     except Exception as e:
         print(f"Erro: {e}")
