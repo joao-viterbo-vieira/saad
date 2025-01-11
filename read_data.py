@@ -2,7 +2,7 @@ import re
 import ast
 
 
-def read_data_file(filename):
+def read_data_file_antigo(filename):
     """
     Lê o ficheiro de dados do problema (ex.: dados.txt) e devolve
     nWarehouses, nCustomers, fixedCost, capacity, demand, transportCost

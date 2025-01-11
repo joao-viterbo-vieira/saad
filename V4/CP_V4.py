@@ -12,77 +12,63 @@ import math
 
 def read_data_file(filename):
     """
-    Lê o ficheiro de dados do problema (ex.: dados.txt) e devolve
-    nWarehouses, nCustomers, fixedCost, capacity, demand, transportCost
+    Lê o ficheiro de dados do problema (ex.: facility_location.dat) e devolve
+    nWarehouses, nCustomers, fixedCost, capacity, demand, transportCost,
+    prohibited_pairs e dependent_warehouses.
     """
     with open(filename, "r", encoding="utf-8") as f:
         content = f.read()
 
     # 1) Extrair nWarehouses
     nWarehouses_match = re.search(r"nWarehouses\s*=\s*(\d+)\s*;", content)
-    if not nWarehouses_match:
-        raise ValueError("nWarehouses não encontrado no ficheiro de dados.")
     nWarehouses = int(nWarehouses_match.group(1))
 
     # 2) Extrair nCustomers
     nCustomers_match = re.search(r"nCustomers\s*=\s*(\d+)\s*;", content)
-    if not nCustomers_match:
-        raise ValueError("nCustomers não encontrado no ficheiro de dados.")
     nCustomers = int(nCustomers_match.group(1))
 
     # 3) Extrair fixedCost como lista de floats
     fixedCost_match = re.search(r"fixedCost\s*=\s*\[(.*?)\];", content, re.DOTALL)
-    if not fixedCost_match:
-        raise ValueError("fixedCost não encontrado no ficheiro de dados.")
     fixedCost_str = fixedCost_match.group(1)
-    fixedCost = [float(x.strip()) for x in fixedCost_str.replace("\n", "").split(",")]
+    fixedCost = [float(x) for x in fixedCost_str.replace("\n", "").split(",")]
 
     # 4) Extrair capacity
     capacity_match = re.search(r"capacity\s*=\s*\[(.*?)\];", content, re.DOTALL)
-    if not capacity_match:
-        raise ValueError("capacity não encontrado no ficheiro de dados.")
     capacity_str = capacity_match.group(1)
-    capacity = [float(x.strip()) for x in capacity_str.replace("\n", "").split(",")]
+    capacity = [float(x) for x in capacity_str.replace("\n", "").split(",")]
 
     # 5) Extrair demand
     demand_match = re.search(r"demand\s*=\s*\[(.*?)\];", content, re.DOTALL)
-    if not demand_match:
-        raise ValueError("demand não encontrado no ficheiro de dados.")
     demand_str = demand_match.group(1)
-    demand = [float(x.strip()) for x in demand_str.replace("\n", "").split(",")]
+    demand = [float(x) for x in demand_str.replace("\n", "").split(",")]
 
-    # 6) Extrair transportCost como matriz
+    # 6) Extrair transportCost (matriz)
     transportCost_match = re.search(
         r"transportCost\s*=\s*\[(.*?)\];", content, re.DOTALL
     )
-    if not transportCost_match:
-        raise ValueError("transportCost não encontrado no ficheiro de dados.")
     transportCost_str = transportCost_match.group(1).strip()
+
+    # Ajustes para ficar num formato Python
     transportCost_str = "[" + transportCost_str + "]"
     transportCost_str = transportCost_str.replace(";", "")
     transportCost = ast.literal_eval(transportCost_str)
 
-    # conceito adicionado - clientes que não podem seer servidos pelo mesmo armazém
-    # Clientes com números sequenciais não podem compartilhar o mesmo armazém
-    # prohibited_pairs = [(i, i + 1) for i in range(1, 50, 2)]
+    # 7) Extrair prohibited_pairs
+    #    Note que no seu txt o prohibited_pairs aparece em formato: prohibited_pairs = [(1, 2), (3, 4), ...]
+    #    Faremos o parse buscando o trecho entre colchetes.
+    prohibited_pairs = []
+    pp_match = re.search(r"prohibited_pairs\s*=\s*\[(.*?)\]", content, re.DOTALL)
+    if pp_match:
+        pp_str = "[" + pp_match.group(1).strip() + "]"
+        prohibited_pairs = ast.literal_eval(pp_str)
 
-    # Clientes divisíveis por 5 não podem compartilhar o mesmo armazém
-    # prohibited_pairs += [(i, j) for i in range(5, 51, 5) for j in range(5, 51, 5) if i < j]
-
-    # Adjust indices to zero-based
-    prohibited_pairs = [(i - 1, i) for i in range(2, 51, 2)]  # Sequential pairs
-    prohibited_pairs += [
-        (i, j) for i in range(5, 50, 5) for j in range(5, 50, 5) if i < j
-    ]  # Multiples of 5
-
-    # conceito adicionado - warehouses que tem que ser abertos se determinado warehouses for aberto
-
-    # Initialize the dependent_warehouses array
+    # 8) Extrair dependent_warehouses
+    #    Mesmo procedimento.
     dependent_warehouses = []
-
-    # Create dependency pairs for the first 5 warehouses
-    for i in range(5):
-        dependent_warehouses.append((i, i + 5))
+    dw_match = re.search(r"dependent_warehouses\s*=\s*\[(.*?)\]", content, re.DOTALL)
+    if dw_match:
+        dw_str = "[" + dw_match.group(1).strip() + "]"
+        dependent_warehouses = ast.literal_eval(dw_str)
 
     return (
         nWarehouses,
