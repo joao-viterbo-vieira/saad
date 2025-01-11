@@ -116,9 +116,9 @@ def solve_capacitated_warehouse_location(
     ]
 
     # amountServed[i][j] = quantidade fornecida pelo armazém i para o cliente j
-    # Variável inteira entre 0 e 5000 (inteiros)
+    # Variável inteira entre 0 e 15000 (inteiros)
     amountServed = [
-        [model.integer_var(0, 5000, name=f"amountServed_{i}_{j}") for j in range(nCustomers)]
+        [model.integer_var(0, 15000, name=f"amountServed_{i}_{j}") for j in range(nCustomers)]
         for i in range(nWarehouses)
     ]
 
@@ -167,16 +167,16 @@ def solve_capacitated_warehouse_location(
         )
 
     # 7. Certain pairs of customers cannot be served by the same warehouse
-    for (c1, c2) in incompatiblePairs:
+    for (c1 , c2) in incompatiblePairs:
         for i in range(nWarehouses):
-            model.add_constraint(y[i][c1] + y[i][c2] <= 1)
+            model.add_constraint(y[i][c1 - 1] + y[i][c2 - 1] <= 1)
 
     # 8. If one warehouse in a group is open, all others in the group must also open
     for group in groups:
-        for i in group:
-            for j in group:
+        for i  in group:
+            for j  in group:
                 if i != j:
-                    model.add_constraint(x[i] == x[j])  # Synchronize open/close statuses
+                    model.add_constraint(x[i - 1] == x[j - 1])  # Synchronize open/close statuses
 
     # 9. Tie amountServed to y[i][j]
     for i in range(nWarehouses):
@@ -192,24 +192,24 @@ def solve_capacitated_warehouse_location(
         objective_value = solution.get_objective_values()[0]  # Retorna o valor da função objetivo
         print(f"\nCusto Total Ótimo: {objective_value:.2f}\n")
         print("Armazéns a Abrir:")
-        for i in range(1, nWarehouses):
+        for i in range(nWarehouses):
             if solution[x[i]] == 1:
-                print(f"  - Armazém {i} está aberto.")
+                print(f"  - Armazém {i + 1} está aberto.")
 
         print("\nFornecimento aos Clientes:")
-        for j in range(1, nCustomers):
+        for j in range(nCustomers):
             print(f"\nCliente {j} é atendido por:")
             for i in range(1, nWarehouses):
                 served = solution[amountServed[i][j]]
                 if served > 0:
-                    print(f"  -> Armazém {i} com fornecimento: {served} unidades")
+                    print(f"  -> Armazém {i + 1} com fornecimento: {served} unidades")
     else:
         print("O solver não encontrou uma solução ótima dentro do tempo limite.")
 
 
 if __name__ == "__main__":
     # Caminho para o ficheiro de dados
-    data_file = ".dat/facility_location.dat"
+    data_file = ".dat/facility_location_44.dat"
 
     try:
         # 1) Ler dados do ficheiro
@@ -219,7 +219,7 @@ if __name__ == "__main__":
 
         # 2) Resolver o problema
         # Define o limite de tempo (exemplo: 5 minutos = 300 segundos)
-        time_limit_seconds = 1200  # 20 minutos
+        time_limit_seconds = 600  # 10 minutos
 
         solve_capacitated_warehouse_location(
             nWarehouses,
