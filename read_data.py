@@ -53,8 +53,8 @@ def read_data_file_antigo(filename):
 
 
 # 1) Ler dados do ficheiro
-(nWarehouses, nCustomers, fixedCost, capacity, demand, transportCost) = read_data_file(
-    "facility_location.dat"
+(nWarehouses, nCustomers, fixedCost, capacity, demand, transportCost) = (
+    read_data_file_antigo("wh_ficheiro_dados.txt")
 )
 # dar print dos valores
 print("nWarehouses = ", nWarehouses)
