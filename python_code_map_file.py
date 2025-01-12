@@ -2,10 +2,10 @@
 import csv
 
 # Define the output file name
-dat_file = "facility_location_123.dat"
+dat_file = ".dat/facility_location_93.dat"
 
 # Open your input data file (adjust path as necessary)
-input_file = "data/cap123.txt"
+input_file = "data/cap93.txt"
 
 # Read the data from your file
 with open(input_file, "r") as f:

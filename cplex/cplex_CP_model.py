@@ -1,87 +1,79 @@
 import re
 import ast
 from docplex.cp.model import CpoModel
-
+from docplex.cp.config import CpoParameters
 
 def read_data_file(filename):
     """
-    Lê o ficheiro de dados do problema (ex.: dados.txt) e devolve
-    nWarehouses, nCustomers, fixedCost, capacity, demand, transportCost
+    Lê o ficheiro de dados do problema (ex.: facility_location.dat) e devolve
+    nWarehouses, nCustomers, fixedCost, capacity, demand, transportCost,
+    prohibited_pairs e dependent_warehouses.
     """
     with open(filename, "r", encoding="utf-8") as f:
         content = f.read()
 
     # 1) Extrair nWarehouses
     nWarehouses_match = re.search(r"nWarehouses\s*=\s*(\d+)\s*;", content)
-    if not nWarehouses_match:
-        raise ValueError("nWarehouses não encontrado no ficheiro de dados.")
     nWarehouses = int(nWarehouses_match.group(1))
 
     # 2) Extrair nCustomers
     nCustomers_match = re.search(r"nCustomers\s*=\s*(\d+)\s*;", content)
-    if not nCustomers_match:
-        raise ValueError("nCustomers não encontrado no ficheiro de dados.")
     nCustomers = int(nCustomers_match.group(1))
 
     # 3) Extrair fixedCost como lista de floats
     fixedCost_match = re.search(r"fixedCost\s*=\s*\[(.*?)\];", content, re.DOTALL)
-    if not fixedCost_match:
-        raise ValueError("fixedCost não encontrado no ficheiro de dados.")
     fixedCost_str = fixedCost_match.group(1)
-    fixedCost = [float(x.strip()) for x in fixedCost_str.replace("\n", "").split(",")]
+    fixedCost = [float(x) for x in fixedCost_str.replace("\n", "").split(",")]
 
     # 4) Extrair capacity
     capacity_match = re.search(r"capacity\s*=\s*\[(.*?)\];", content, re.DOTALL)
-    if not capacity_match:
-        raise ValueError("capacity não encontrado no ficheiro de dados.")
     capacity_str = capacity_match.group(1)
-    capacity = [float(x.strip()) for x in capacity_str.replace("\n", "").split(",")]
+    capacity = [float(x) for x in capacity_str.replace("\n", "").split(",")]
 
     # 5) Extrair demand
     demand_match = re.search(r"demand\s*=\s*\[(.*?)\];", content, re.DOTALL)
-    if not demand_match:
-        raise ValueError("demand não encontrado no ficheiro de dados.")
     demand_str = demand_match.group(1)
-    demand = [float(x.strip()) for x in demand_str.replace("\n", "").split(",")]
+    demand = [float(x) for x in demand_str.replace("\n", "").split(",")]
 
-    # 6) Extrair transportCost como matriz
+    # 6) Extrair transportCost (matriz)
     transportCost_match = re.search(
         r"transportCost\s*=\s*\[(.*?)\];", content, re.DOTALL
     )
-    if not transportCost_match:
-        raise ValueError("transportCost não encontrado no ficheiro de dados.")
     transportCost_str = transportCost_match.group(1).strip()
+
+    # Ajustes para ficar num formato Python
     transportCost_str = "[" + transportCost_str + "]"
     transportCost_str = transportCost_str.replace(";", "")
     transportCost = ast.literal_eval(transportCost_str)
 
-    # Define incompatiblePairs manually as a list of tuples
-    incompatiblePairs = [
-        (4, 6),    # Customers 4 and 6 are served by Warehouse 1.
-        (4, 30),   # Customers 4 and 30 are served by Warehouse 1.
-        (6, 30),   # Customers 6 and 30 are served by Warehouse 1.
-        (11, 23),  # Customers 11 and 23 are served by Warehouse 11.
-        (34, 37),  # Customers 34 and 37 are served by Warehouse 6.
-        (37, 38),  # Customers 37 and 38 are served by Warehouse 6.
-        (41, 42),  # Customers 41 and 42 are served by Warehouse 12.
-        (45, 46),  # Customers 45 and 46 are served by Warehouse 8.
-        (43, 45),  # Customers 43 and 45 are served by Warehouse 8.
-        # Add more pairs as needed
-    ]
+    # 7) Extrair prohibited_pairs
+    #    Note que no seu txt o prohibited_pairs aparece em formato: prohibited_pairs = [(1, 2), (3, 4), ...]
+    #    Faremos o parse buscando o trecho entre colchetes.
+    prohibited_pairs = []
+    pp_match = re.search(r"prohibited_pairs\s*=\s*\[(.*?)\]", content, re.DOTALL)
+    if pp_match:
+        pp_str = "[" + pp_match.group(1).strip() + "]"
+        prohibited_pairs = ast.literal_eval(pp_str)
 
-    # Define groups manually as a list of lists
-    groups = [
-        [1, 10],       # Warehouses 1 and 5 need to open together.
-        [8, 12],      # Warehouses 8 and 12 need to open together.
-        [11, 14],     # Warehouses 11 and 14 need to open together.
-        [2, 3, 9],    # Warehouses 2, 3, and 9 need to open together.
-        [6, 9, 11],   # Warehouses 6, 9, and 11 need to open together.
-        [1, 5, 12, 8] # Warehouses 1, 5, 12, and 8 need to open together.
-        # Add more groups as needed
-    ]
+    # 8) Extrair dependent_warehouses
+    #    Mesmo procedimento.
+    dependent_warehouses = []
+    dw_match = re.search(r"dependent_warehouses\s*=\s*\[(.*?)\]", content, re.DOTALL)
+    if dw_match:
+        dw_str = "[" + dw_match.group(1).strip() + "]"
+        dependent_warehouses = ast.literal_eval(dw_str)
 
+    return (
+        nWarehouses,
+        nCustomers,
+        fixedCost,
+        capacity,
+        demand,
+        transportCost,
+        prohibited_pairs,
+        dependent_warehouses,
+    )
 
-    return nWarehouses, nCustomers, fixedCost, capacity, demand, transportCost, incompatiblePairs, groups
 
 
 def solve_capacitated_warehouse_location(
@@ -99,7 +91,12 @@ def solve_capacitated_warehouse_location(
     Resolve o problema de Localização de Armazéns Capacitados usando docplex com Programação por Restrições.
     time_limit_seconds: limite de tempo em segundos (default = 300 s = 5 minutos)
     """
+
+
     model = CpoModel()
+
+    params = CpoParameters()
+    params.SearchType = "MultiPoint"
 
     # Certificar que capacity e demand são inteiros
     capacity = [int(c) for c in capacity]
@@ -171,12 +168,9 @@ def solve_capacitated_warehouse_location(
         for i in range(nWarehouses):
             model.add_constraint(y[i][c1 - 1] + y[i][c2 - 1] <= 1)
 
-    # 8. If one warehouse in a group is open, all others in the group must also open
-    for group in groups:
-        for i  in group:
-            for j  in group:
-                if i != j:
-                    model.add_constraint(x[i - 1] == x[j - 1])  # Synchronize open/close statuses
+    # 8. If one warehouse in a group is open, the other warehouse in the group must also be open. This does not aply backwards
+    for i, j in groups:
+            model.add_constraint(x[i] <= x[j])  # Synchronize open/close statuses
 
     # 9. Tie amountServed to y[i][j]
     for i in range(nWarehouses):
@@ -185,7 +179,7 @@ def solve_capacitated_warehouse_location(
 
 
     # Resolver o problema
-    solution = model.solve(TimeLimit=time_limit_seconds)
+    solution = model.solve(params = params, TimeLimit=time_limit_seconds)
 
     # Processar e exibir os resultados
     if solution:
@@ -213,7 +207,7 @@ if __name__ == "__main__":
 
     try:
         # 1) Ler dados do ficheiro
-        nWarehouses, nCustomers, fixedCost, capacity, demand, transportCost, incompatiblePairs, groups, = (
+        nWarehouses, nCustomers, fixedCost, capacity, demand, transportCost, prohibited_pairs, dependent_warehouses, = (
             read_data_file(data_file)
         )
 
@@ -228,8 +222,8 @@ if __name__ == "__main__":
             capacity,
             demand,
             transportCost,
-            incompatiblePairs,
-            groups,
+            prohibited_pairs,
+            dependent_warehouses,
             time_limit_seconds=time_limit_seconds,
         )
     except Exception as e:
