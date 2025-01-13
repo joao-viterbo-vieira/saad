@@ -190,7 +190,7 @@ def solve_capacitated_warehouse_location(
 
 
 if __name__ == "__main__":
-    data_file = ".dat/facility_location_92.dat"
+    data_file = ".dat/facility_location_124.dat"
 
     try:
         # Read data from file

@@ -96,7 +96,9 @@ def solve_capacitated_warehouse_location(
     model = CpoModel()
 
     params = CpoParameters()
-    params.SearchType = "MultiPoint"
+    params.SearchType = "Auto"
+
+    
 
     # Certificar que capacity e demand são inteiros
     capacity = [int(c) for c in capacity]
