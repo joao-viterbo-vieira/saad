@@ -41,6 +41,9 @@ The data files in the `data/` directory contain:
 - Warehouse capacities
 - Customer demands 
 - Transportation costs
+- Prohibited pairs
+- Dependent warehouses
+
 
 ## Results
 Results comparing CP vs LP approaches are stored in Results_CP_vs_LP.xlsx
