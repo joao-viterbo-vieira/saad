@@ -11,6 +11,9 @@ This repository contains multiple approaches (Linear Programming, Constraint Pro
   - LP_V5.py: Linear optimization with OR-Tools
   - CP_V5.py: Constraint programming with OR-Tools CP-SAT
 
+  It is possible to enable or disable only these 3 constraints: `minimum_capacity_usage`, `prohibited_pairs`, and `dependent_warehouses`.
+
+
 - **DOcplex_LP_CP/**
   - cplex_LP_model.py: Linear optimization with DOcplex
   - cplex_CP_model.py: Constraint programming with DOcplex CP
