@@ -2,8 +2,6 @@
 # versão com novas restrições
 # forçar a um uso mínimo de capacidade se o armazém for aberto
 
-# Custo Total Ótimo: 1150951.65
-
 import re
 import ast
 from ortools.sat.python import cp_model

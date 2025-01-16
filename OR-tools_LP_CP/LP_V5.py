@@ -4,8 +4,6 @@ import io
 import sys
 from ortools.linear_solver import pywraplp
 
-# Custo Total Ótimo: 1150951.65
-
 
 def read_data_file(filename):
     """
