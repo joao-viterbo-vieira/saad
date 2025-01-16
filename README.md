@@ -19,8 +19,15 @@ This repository contains multiple approaches (Linear Programming, Constraint Pro
   - python_code_map_file.py: Data mapping utilities
   - read_data_V2.py: Data file parsing functions
 
-- **.dat/**
-  - cap44.dat, cap92.dat, cap93.dat, cap123.dat, cap124.dat, cap133.dat: Test instances
+- **data/**
+  - facility_location_41.dat
+  - facility_location_44.dat
+  - facility_location_51.dat
+  - facility_location_92.dat
+  - facility_location_93.dat
+  - facility_location_123.dat
+  - facility_location_124.dat
+  - facility_location_133.dat
 
 - **extra/scripts_ibm_ilog_cplex/**
   - wh_constraint_programming.txt: CP model definition
@@ -28,7 +35,7 @@ This repository contains multiple approaches (Linear Programming, Constraint Pro
   - wh_ficheiro_dados.txt: Example data file format
   - Note: Initial examples in ibm_ilog_cplex
 ## Data Files
-The data files in the `.dat/` directory contain:
+The data files in the `data/` directory contain:
 - Number of warehouses and customers
 - Fixed costs for opening warehouses
 - Warehouse capacities
