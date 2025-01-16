@@ -26,7 +26,7 @@ This repository contains multiple approaches (Linear Programming, Constraint Pro
   - wh_constraint_programming.txt: CP model definition
   - wh_programacao_linear.txt: LP model definition  
   - wh_ficheiro_dados.txt: Example data file format
-Initial examples in ibm_ilog_cplex
+  - Note: Initial examples in ibm_ilog_cplex
 ## Data Files
 The data files in the `.dat/` directory contain:
 - Number of warehouses and customers
