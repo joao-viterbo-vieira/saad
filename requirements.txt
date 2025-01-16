@@ -1,0 +1,6 @@
+ortools
+docplex
+cplex
+pandas
+openpyxl
+numpy
