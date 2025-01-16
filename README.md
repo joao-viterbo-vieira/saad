@@ -12,11 +12,12 @@ This repository contains multiple approaches (Linear Programming, Constraint Pro
   - CP_V5.py: Constraint programming with OR-Tools CP-SAT
 
   It is possible to enable or disable only these 3 constraints: `minimum_capacity_usage`, `prohibited_pairs`, and `dependent_warehouses`.
-
+  Ensure that all data directories used in the code are configured to point to the data folder within the project directory.
 
 - **DOcplex_LP_CP/**
   - cplex_LP_model.py: Linear optimization with DOcplex
   - cplex_CP_model.py: Constraint programming with DOcplex CP
+  Ensure that all data directories used in the code are configured to point to the data folder within the project directory.
 
 - **DataManagementScripts/**
   - python_code_map_file.py: Data mapping utilities
