@@ -22,11 +22,11 @@ This repository contains multiple approaches (Linear Programming, Constraint Pro
 - **.dat/**
   - cap44.dat, cap92.dat, cap93.dat, cap123.dat, cap124.dat, cap133.dat: Test instances
 
-- **scripts_ibm_ilog_cplex/**
+- **extra/scripts_ibm_ilog_cplex/**
   - wh_constraint_programming.txt: CP model definition
   - wh_programacao_linear.txt: LP model definition  
   - wh_ficheiro_dados.txt: Example data file format
-
+Initial examples in ibm_ilog_cplex
 ## Data Files
 The data files in the `.dat/` directory contain:
 - Number of warehouses and customers
