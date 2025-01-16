@@ -54,7 +54,7 @@ The data files in the `data/` directory contain:
 Results comparing CP vs LP approaches are stored in Results_CP_vs_LP.xlsx
 
 ## Report
-Final Report
+Final Report: Extended_Capacity_Warehouse_Location_Report.pdf
 
 ## Presentation
 Final presentation
