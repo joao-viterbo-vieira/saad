@@ -1,4 +1,4 @@
-# Capacitated Warehouse Location Project
+# Extended Capacity Warehouse Location Problem
 
 This repository contains multiple approaches (Linear Programming, Constraint Programming) to solve the Capacitated Warehouse Location Problem using:
 - OR-Tools (CBC solver)
