@@ -50,3 +50,10 @@ The data files in the `data/` directory contain:
 
 ## Results
 Results comparing CP vs LP approaches are stored in Results_CP_vs_LP.xlsx
+
+## Report
+Final Report
+
+## Presentation
+Final presentation
+
