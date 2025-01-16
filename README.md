@@ -17,6 +17,7 @@ This repository contains multiple approaches (Linear Programming, Constraint Pro
 - **DOcplex_LP_CP/**
   - cplex_LP_model.py: Linear optimization with DOcplex
   - cplex_CP_model.py: Constraint programming with DOcplex CP
+    
   Ensure that all data directories used in the code are configured to point to the data folder within the project directory.
 
 - **DataManagementScripts/**
