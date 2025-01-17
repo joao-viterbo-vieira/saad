@@ -247,7 +247,7 @@ def solve_capacitated_warehouse_location(
 
 if __name__ == "__main__":
     # Caminho para o ficheiro de dados
-    data_file = "/Users/joaovieira/Desktop/Trabalho_SAAD/.dat/facility_location_92.dat"
+    data_file = "/Users/joaovieira/Desktop/Trabalho_SAAD/data/facility_location_92.dat"
 
     # Configuração de ativação/desativação de restrições
     constraints_config = {
