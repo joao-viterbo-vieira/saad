@@ -60,5 +60,5 @@ Final Report: Extended_Capacity_Warehouse_Location_Report.pdf
 Final presentation
 
 ## Contributors
-@jcns1107
-@ghostcat-pro
+- [@jcns1107](https://github.com/jcns1107)
+- [@ghostcat-pro](https://github.com/ghostcat-pro)
