@@ -59,3 +59,6 @@ Final Report: Extended_Capacity_Warehouse_Location_Report.pdf
 ## Presentation
 Final presentation
 
+## Contributors
+@jcns1107
+@ghostcat-pro
